@@ -1,0 +1,28 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'com.example.cpsoundboard'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'com.example.cpsoundboard'
+        minSdk 23
+        targetSdk 35
+        versionCode 2
+        versionName '1.1'
+    }
+}
+
+// Automatically create a JS sound list from every audio file in assets/sounds.
+// Drop a new MP3/WAV/OGG in that folder and it will become a pad on the next APK build.
+ def generateSoundList = tasks.register('generateSoundList') {
+    def soundsDir = file('src/main/assets/sounds')
+    def outputFile = file('src/main/assets/sounds-data.js')
+    inputs.dir(soundsDir)
+    outputs.file(outputFile)
+    doLast {
+        def audioFiles = soundsDir.listFiles()?.findAll { it.isFile() && it.name.toLowerCase() ==~ /.*\.(mp3|wav|ogg|m4a|aac)$/ }?.sort { it.name.toLowerCase() } ?: []
+        def json = groovy.json.JsonOutput.toJson(audioFiles.collect { it.name })
+        outputFile.text = "window.SOUND_FILES = ${json};\n"
+    }
+}
+preBuild.dependsOn(generateSoundList)
